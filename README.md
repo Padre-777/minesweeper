@@ -4,9 +4,6 @@
 
 **[▶ Играть онлайн](https://padre-777.github.io/minesweeper/)**
 
-![preview](https://img.shields.io/badge/HTML-CSS-JS-green?style=flat-square&logo=html5)
-![license](https://img.shields.io/badge/license-MIT-green?style=flat-square)
-
 ---
 
 ## Возможности
