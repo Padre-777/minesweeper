@@ -2,7 +2,7 @@
 
 Браузерная игра «Сапёр» в стиле ретро-терминала. Написана на чистом HTML/CSS/JavaScript — без зависимостей и сборщиков.
 
-**[▶ Играть онлайн]([https://padre_777.github.io/minesweeper/](https://padre-777.github.io/minesweeper/))** 
+**[▶ Играть онлайн](https://padre-777.github.io/minesweeper/)**
 
 ![preview](https://img.shields.io/badge/HTML-CSS-JS-green?style=flat-square&logo=html5)
 ![license](https://img.shields.io/badge/license-MIT-green?style=flat-square)
