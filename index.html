@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>САПЁР</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap');
+
+  :root {
+    --bg: #0a0e0a;
+    --panel: #0f1a0f;
+    --border: #1a3a1a;
+    --green: #00ff41;
+    --green-dim: #00aa2a;
+    --green-dark: #003a10;
+    --red: #ff3a3a;
+    --yellow: #ffd700;
+    --cyan: #00ffcc;
+    --cell-bg: #0d1f0d;
+    --cell-hover: #153015;
+    --cell-revealed: #060e06;
+    --cell-border: #1e3a1e;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--green);
+    font-family: 'Share Tech Mono', monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,255,65,0.015) 2px,
+      rgba(0,255,65,0.015) 4px
+    );
+    pointer-events: none;
+    z-index: 100;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.6) 100%);
+    pointer-events: none;
+    z-index: 99;
+  }
+
+  .scanline {
+    position: fixed;
+    top: -100%;
+    left: 0;
+    width: 100%;
+    height: 40px;
+    background: linear-gradient(transparent, rgba(0,255,65,0.04), transparent);
+    animation: scanline 8s linear infinite;
+    pointer-events: none;
+    z-index: 101;
+  }
+
+  @keyframes scanline {
+    0% { top: -5%; }
+    100% { top: 105%; }
+  }
+
+  .container {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .title {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(20px, 5vw, 36px);
+    font-weight: 900;
+    letter-spacing: 8px;
+    color: var(--green);
+    text-shadow: 0 0 20px var(--green), 0 0 40px rgba(0,255,65,0.3);
+    animation: flicker 6s infinite;
+  }
+
+  @keyframes flicker {
+    0%,95%,100% { opacity: 1; }
+    96% { opacity: 0.7; }
+    97% { opacity: 1; }
+    98% { opacity: 0.5; }
+    99% { opacity: 1; }
+  }
+
+  .subtitle {
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: var(--green-dim);
+    margin-top: -8px;
+  }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    box-shadow: 0 0 30px rgba(0,255,65,0.08), inset 0 0 30px rgba(0,0,0,0.5);
+    padding: 16px;
+    border-radius: 2px;
+  }
+
+  .hud {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 10px 16px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    box-shadow: 0 0 20px rgba(0,255,65,0.05);
+    gap: 20px;
+  }
+
+  .hud-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .hud-label {
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: var(--green-dim);
+  }
+
+  .hud-value {
+    font-family: 'Orbitron', monospace;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--green);
+    text-shadow: 0 0 10px var(--green);
+    min-width: 60px;
+    text-align: center;
+  }
+
+  .hud-value.red { color: var(--red); text-shadow: 0 0 10px var(--red); }
+  .hud-value.yellow { color: var(--yellow); text-shadow: 0 0 10px var(--yellow); }
+
+  .reset-btn {
+    background: transparent;
+    border: 1px solid var(--green-dim);
+    color: var(--green);
+    font-family: 'Orbitron', monospace;
+    font-size: 18px;
+    cursor: pointer;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    border-radius: 2px;
+  }
+
+  .reset-btn:hover {
+    border-color: var(--green);
+    background: var(--green-dark);
+    box-shadow: 0 0 15px rgba(0,255,65,0.3);
+  }
+
+  .difficulty {
+    display: flex;
+    gap: 8px;
+  }
+
+  .diff-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--green-dim);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    padding: 5px 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-radius: 2px;
+  }
+
+  .diff-btn:hover, .diff-btn.active {
+    border-color: var(--green);
+    color: var(--green);
+    background: var(--green-dark);
+    box-shadow: 0 0 10px rgba(0,255,65,0.2);
+  }
+
+  #board {
+    display: grid;
+    gap: 2px;
+    padding: 12px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    box-shadow: 0 0 30px rgba(0,255,65,0.08);
+  }
+
+  .cell {
+    width: 30px;
+    height: 30px;
+    background: var(--cell-bg);
+    border: 1px solid var(--cell-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: bold;
+    font-family: 'Share Tech Mono', monospace;
+    transition: background 0.1s, box-shadow 0.1s;
+    user-select: none;
+    position: relative;
+  }
+
+  .cell:hover:not(.revealed):not(.game-over-cell) {
+    background: var(--cell-hover);
+    box-shadow: inset 0 0 8px rgba(0,255,65,0.15);
+  }
+
+  .cell.revealed {
+    background: var(--cell-revealed);
+    border-color: #0f1f0f;
+    cursor: default;
+  }
+
+  .cell.flagged { color: var(--yellow); }
+  .cell.flagged::before { content: '⚑'; }
+
+  .cell.mine-hit {
+    background: rgba(255,58,58,0.2);
+    border-color: var(--red);
+    box-shadow: 0 0 15px rgba(255,58,58,0.4);
+    animation: explode 0.3s ease-out;
+  }
+
+  .cell.mine-revealed {
+    background: rgba(255,58,58,0.08);
+    border-color: rgba(255,58,58,0.3);
+  }
+
+  @keyframes explode {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.3); }
+    100% { transform: scale(1); }
+  }
+
+  .cell.revealed-safe {
+    animation: reveal 0.15s ease-out;
+  }
+
+  @keyframes reveal {
+    0% { transform: scale(0.8); opacity: 0.5; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .n1 { color: #00ff41; text-shadow: 0 0 6px #00ff41; }
+  .n2 { color: #00ffcc; text-shadow: 0 0 6px #00ffcc; }
+  .n3 { color: var(--red); text-shadow: 0 0 6px var(--red); }
+  .n4 { color: #8888ff; text-shadow: 0 0 6px #8888ff; }
+  .n5 { color: #ff8800; text-shadow: 0 0 6px #ff8800; }
+  .n6 { color: #00ffcc; text-shadow: 0 0 6px #00ffcc; }
+  .n7 { color: #ff00ff; text-shadow: 0 0 6px #ff00ff; }
+  .n8 { color: #aaaaaa; text-shadow: 0 0 6px #aaaaaa; }
+
+  .status-bar {
+    width: 100%;
+    text-align: center;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--green-dim);
+    padding: 6px;
+    min-height: 28px;
+  }
+
+  .status-bar.win { color: var(--green); text-shadow: 0 0 10px var(--green); animation: pulse 1s infinite; }
+  .status-bar.lose { color: var(--red); text-shadow: 0 0 10px var(--red); }
+
+  @keyframes pulse {
+    0%,100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+
+  .corner-deco {
+    position: fixed;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: rgba(0,255,65,0.15);
+    font-family: 'Share Tech Mono', monospace;
+  }
+  .corner-deco.tl { top: 12px; left: 16px; }
+  .corner-deco.tr { top: 12px; right: 16px; }
+  .corner-deco.bl { bottom: 12px; left: 16px; }
+  .corner-deco.br { bottom: 12px; right: 16px; }
+</style>
+</head>
+<body>
+<div class="scanline"></div>
+<div class="corner-deco tl">SYS://MINESWEEPER_v2.4</div>
+<div class="corner-deco tr" id="clock"></div>
+<div class="corner-deco bl">© TERMINAL GAMES</div>
+<div class="corner-deco br">RMB = FLAG</div>
+
+<div class="container">
+  <div class="title">САПЁР</div>
+  <div class="subtitle">[ MINESWEEPER TERMINAL ]</div>
+
+  <div class="difficulty">
+    <button class="diff-btn active" onclick="setDiff(9,9,10,this)">ЛЁГКИЙ</button>
+    <button class="diff-btn" onclick="setDiff(16,16,40,this)">СРЕДНИЙ</button>
+    <button class="diff-btn" onclick="setDiff(16,30,99,this)">ЭКСПЕРТ</button>
+  </div>
+
+  <div class="hud">
+    <div class="hud-block">
+      <div class="hud-label">МИНЫ</div>
+      <div class="hud-value red" id="mines-left">010</div>
+    </div>
+    <button class="reset-btn" onclick="initGame()" title="Новая игра">↺</button>
+    <div class="hud-block">
+      <div class="hud-label">ВРЕМЯ</div>
+      <div class="hud-value yellow" id="timer">000</div>
+    </div>
+  </div>
+
+  <div id="board"></div>
+
+  <div class="status-bar" id="status">ЛКМ — открыть · ПКМ — флаг · ↺ — новая игра</div>
+</div>
+
+<script>
+let ROWS = 9, COLS = 9, MINES = 10;
+let board = [], revealed = [], flagged = [];
+let gameOver = false, gameWon = false, firstClick = true;
+let timerInterval = null, seconds = 0;
+
+function setDiff(r, c, m, btn) {
+  ROWS = r; COLS = c; MINES = m;
+  document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  initGame();
+}
+
+function initGame() {
+  clearInterval(timerInterval);
+  seconds = 0;
+  gameOver = false;
+  gameWon = false;
+  firstClick = true;
+  board = Array.from({length: ROWS}, () => Array(COLS).fill(0));
+  revealed = Array.from({length: ROWS}, () => Array(COLS).fill(false));
+  flagged = Array.from({length: ROWS}, () => Array(COLS).fill(false));
+  updateTimer();
+  updateMinesLeft();
+  setStatus('ЛКМ — открыть · ПКМ — флаг · ↺ — новая игра', '');
+  renderBoard();
+}
+
+function placeMines(safeR, safeC) {
+  let placed = 0;
+  while (placed < MINES) {
+    let r = Math.floor(Math.random() * ROWS);
+    let c = Math.floor(Math.random() * COLS);
+    if (board[r][c] === -1) continue;
+    if (Math.abs(r - safeR) <= 1 && Math.abs(c - safeC) <= 1) continue;
+    board[r][c] = -1;
+    placed++;
+  }
+  for (let r = 0; r < ROWS; r++)
+    for (let c = 0; c < COLS; c++)
+      if (board[r][c] !== -1)
+        board[r][c] = countAdj(r, c, -1);
+}
+
+function countAdj(r, c, val) {
+  let count = 0;
+  for (let dr = -1; dr <= 1; dr++)
+    for (let dc = -1; dc <= 1; dc++) {
+      let nr = r+dr, nc = c+dc;
+      if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && board[nr][nc] === val)
+        count++;
+    }
+  return count;
+}
+
+function reveal(r, c) {
+  if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return;
+  if (revealed[r][c] || flagged[r][c]) return;
+  revealed[r][c] = true;
+  if (board[r][c] === 0)
+    for (let dr = -1; dr <= 1; dr++)
+      for (let dc = -1; dc <= 1; dc++)
+        reveal(r+dr, c+dc);
+}
+
+function handleClick(r, c) {
+  if (gameOver || gameWon) return;
+  if (revealed[r][c]) {
+    // chord: if flagged neighbors == number, reveal others
+    if (board[r][c] > 0) {
+      let flagCount = countAdjFlagged(r, c);
+      if (flagCount === board[r][c]) chordReveal(r, c);
+    }
+    return;
+  }
+  if (flagged[r][c]) return;
+
+  if (firstClick) {
+    firstClick = false;
+    placeMines(r, c);
+    startTimer();
+  }
+
+  if (board[r][c] === -1) {
+    revealed[r][c] = true;
+    renderBoard();
+    triggerGameOver(r, c);
+    return;
+  }
+
+  reveal(r, c);
+  renderBoard();
+  checkWin();
+}
+
+function countAdjFlagged(r, c) {
+  let count = 0;
+  for (let dr = -1; dr <= 1; dr++)
+    for (let dc = -1; dc <= 1; dc++) {
+      let nr = r+dr, nc = c+dc;
+      if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && flagged[nr][nc])
+        count++;
+    }
+  return count;
+}
+
+function chordReveal(r, c) {
+  for (let dr = -1; dr <= 1; dr++)
+    for (let dc = -1; dc <= 1; dc++) {
+      let nr = r+dr, nc = c+dc;
+      if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && !flagged[nr][nc] && !revealed[nr][nc]) {
+        if (board[nr][nc] === -1) {
+          revealed[nr][nc] = true;
+          renderBoard();
+          triggerGameOver(nr, nc);
+          return;
+        }
+        reveal(nr, nc);
+      }
+    }
+  renderBoard();
+  checkWin();
+}
+
+function handleRightClick(e, r, c) {
+  e.preventDefault();
+  if (gameOver || gameWon || revealed[r][c]) return;
+  flagged[r][c] = !flagged[r][c];
+  updateMinesLeft();
+  renderBoard();
+}
+
+function triggerGameOver(hitR, hitC) {
+  gameOver = true;
+  clearInterval(timerInterval);
+  setStatus('💀 ПОДРЫВ — ИГРА ОКОНЧЕНА', 'lose');
+  // reveal all mines
+  for (let r = 0; r < ROWS; r++)
+    for (let c = 0; c < COLS; c++)
+      if (board[r][c] === -1) revealed[r][c] = true;
+  renderBoard(hitR, hitC);
+}
+
+function checkWin() {
+  let unrevealedSafe = 0;
+  for (let r = 0; r < ROWS; r++)
+    for (let c = 0; c < COLS; c++)
+      if (!revealed[r][c] && board[r][c] !== -1) unrevealedSafe++;
+  if (unrevealedSafe === 0) {
+    gameWon = true;
+    clearInterval(timerInterval);
+    setStatus('✔ ПОЛЕ РАЗМИНИРОВАНО — ПОБЕДА!', 'win');
+  }
+}
+
+function startTimer() {
+  timerInterval = setInterval(() => {
+    seconds++;
+    updateTimer();
+  }, 1000);
+}
+
+function updateTimer() {
+  document.getElementById('timer').textContent = String(Math.min(seconds, 999)).padStart(3, '0');
+}
+
+function updateMinesLeft() {
+  let flags = flagged.flat().filter(Boolean).length;
+  let left = MINES - flags;
+  document.getElementById('mines-left').textContent = String(Math.max(0, left)).padStart(3, '0');
+}
+
+function setStatus(msg, cls) {
+  let el = document.getElementById('status');
+  el.textContent = msg;
+  el.className = 'status-bar ' + cls;
+}
+
+function renderBoard(hitR = -1, hitC = -1) {
+  const boardEl = document.getElementById('board');
+  boardEl.style.gridTemplateColumns = `repeat(${COLS}, 30px)`;
+  boardEl.innerHTML = '';
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+
+      if (revealed[r][c]) {
+        if (board[r][c] === -1) {
+          cell.className += r === hitR && c === hitC ? ' mine-hit' : ' mine-revealed';
+          cell.textContent = '✸';
+          cell.style.color = r === hitR && c === hitC ? '#ff3a3a' : '#882222';
+        } else {
+          cell.className += ' revealed';
+          if (board[r][c] > 0) {
+            cell.textContent = board[r][c];
+            cell.className += ' n' + board[r][c];
+          }
+          if (!gameOver) cell.classList.add('revealed-safe');
+        }
+      } else if (flagged[r][c]) {
+        cell.className += ' flagged';
+      }
+
+      const rr = r, cc = c;
+      cell.addEventListener('click', () => handleClick(rr, cc));
+      cell.addEventListener('contextmenu', e => handleRightClick(e, rr, cc));
+      boardEl.appendChild(cell);
+    }
+  }
+}
+
+// Clock
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    String(now.getHours()).padStart(2,'0') + ':' +
+    String(now.getMinutes()).padStart(2,'0') + ':' +
+    String(now.getSeconds()).padStart(2,'0');
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+initGame();
+</script>
+</body>
+</html>
